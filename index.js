@@ -121,7 +121,7 @@ async function run() {
     });
 
     // adverti mongoDB te add -------------------------------------------
-    app.post("/addproduct", async (req, res) => {
+    app.post("/addProduct", async (req, res) => {
       const user = req.body;
       const result = await productCategory.insertOne(user);
       res.send(result);
@@ -148,6 +148,13 @@ async function run() {
       const services = await cursor.toArray();
       res.send(services);
     });
+    //  User with email ---------------------------------- 26.11.22
+    app.get("/users/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await userCollection.findOne(query);
+      res.send(user);
+    });
     app.post("/users", async (req, res) => {
       const user = req.body;
       const result = await userCollection.insertOne(user);
@@ -166,6 +173,25 @@ async function run() {
       const query = { email };
       const user = await userCollection.findOne(query);
       res.send({ isAdmin: user?.userType === "admin" });
+    });
+
+    // admin approved seller varified
+    app.put("/users/admin/:id", async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const filter = { _id: ObjectId(id) };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: {
+          role: "verify",
+        },
+      };
+      const result = await userCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+      res.send(result);
     });
     // buyer User
     app.get("/users/buyer/:email", async (req, res) => {
