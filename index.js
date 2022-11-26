@@ -214,6 +214,14 @@ async function run() {
       const order = await orderCollection.find(query).toArray();
       res.send(order);
     });
+
+    // order with id
+    app.get("/orders/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const order = await orderCollection.findOne(query);
+      res.send(order);
+    });
     // order delete user
     app.delete("/orders/:id", async (req, res) => {
       const id = req.params.id;
@@ -222,7 +230,7 @@ async function run() {
       res.send(result);
     });
     // Order product (order) -------------------------------
-    app.post("/orders", async (req, res) => {
+    app.post("/ordersadd", async (req, res) => {
       const order = req.body;
       // console.log(booking);
       // const query = {};
@@ -234,7 +242,7 @@ async function run() {
     // Add product (product) -------------------------------
     app.post("/productadd", async (req, res) => {
       const productAdd = req.body;
-      console.log(booking);
+      // console.log(booking);
       const product = await productCategory.insertOne(productAdd);
       res.send(product);
     });
