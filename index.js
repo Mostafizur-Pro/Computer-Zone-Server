@@ -20,22 +20,22 @@ const client = new MongoClient(uri, {
   serverApi: ServerApiVersion.v1,
 });
 
-// function verifyJWT(req, res, next) {
-//   const authHeader = req.headers.authorization;
-//   if (!authHeader) {
-//     return res.status(401).send("unauthorized access");
-//   }
+function verifyJWT(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).send("unauthorized access");
+  }
 
-//   const token = authHeader.split(" ")[1];
+  const token = authHeader.split(" ")[1];
 
-//   jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
-//     if (err) {
-//       return res.status(403).send({ message: "forbidden access" });
-//     }
-//     req.decoded = decoded;
-//     next();
-//   });
-// }
+  jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+    if (err) {
+      return res.status(403).send({ message: "forbidden access" });
+    }
+    req.decoded = decoded;
+    next();
+  });
+}
 
 async function run() {
   try {
@@ -52,6 +52,40 @@ async function run() {
     const advertisementCollection = client
       .db("Computer-Zone")
       .collection("advertisement");
+
+    const verifyAdmin = async (req, res, next) => {
+      const decodedEmail = req.decoded.email;
+
+      const query = { email: decodedEmail };
+      const user = await userCollection.findOne(query);
+
+      if (user?.userType !== "Admin") {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
+    const verifyBuyer = async (req, res, next) => {
+      const decodedEmail = req.decoded.email;
+      console.log("buyer email", decodedEmail);
+      const query = { email: decodedEmail };
+      const user = await userCollection.findOne(query);
+
+      if (user?.userType !== "Buyer") {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
+    const verifySeller = async (req, res, next) => {
+      const decodedEmail = req.decoded.email;
+      console.log("buyer email", decodedEmail);
+      const query = { email: decodedEmail };
+      const user = await userCollection.findOne(query);
+
+      if (user?.userType !== "Buyer") {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
 
     // JWT Token
     app.get("/jwt", async (req, res) => {
@@ -105,7 +139,7 @@ async function run() {
       // const services = await cursor.toArray();
       res.send(services);
     });
-    app.delete("/productAll/:id", async (req, res) => {
+    app.delete("/productAll/:id", verifyJWT, async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
       const result = await productCategory.deleteOne(query);
@@ -161,7 +195,7 @@ async function run() {
       res.send(result);
     });
     // client site delete
-    app.delete("/users/:id", async (req, res) => {
+    app.delete("/users/:id", verifyJWT, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
       const result = await userCollection.deleteOne(query);
@@ -172,13 +206,13 @@ async function run() {
       const email = req.params.email;
       const query = { email };
       const user = await userCollection.findOne(query);
-      res.send({ isAdmin: user?.userType === "admin" });
+      res.send({ isAdmin: user?.userType === "Admin" });
     });
 
     // admin approved seller varified
     app.put("/users/admin/:id", async (req, res) => {
       const id = req.params.id;
-      console.log(id);
+
       const filter = { _id: ObjectId(id) };
       const options = { upsert: true };
       const updatedDoc = {
@@ -215,13 +249,30 @@ async function run() {
       res.send(order);
     });
 
-    // order with id
+    // order with id ---------------------------------
+    // order with id ---------------------------------
+    // order with id ---------------------------------
+    // order with id ---------------------------------
+    // order with id ---------------------------------
     app.get("/orders/:id", async (req, res) => {
       const id = req.params.id;
-      const query = { _id: ObjectId(id) };
-      const order = await orderCollection.findOne(query);
-      res.send(order);
+      // console.log("id", id);
+      const query = { _id: id };
+      console.log("query", query);
+      const results = await orderCollection.findOne(query);
+      console.log("order", results);
+      res.send(results);
     });
+    // --------------------------------------------------
+    // --------------------------------------------------
+    // --------------------------------------------------
+    // --------------------------------------------------
+    // --------------------------------------------------
+    // --------------------------------------------------
+    // --------------------------------------------------
+    // --------------------------------------------------
+    // --------------------------------------------------
+
     // order delete user
     app.delete("/orders/:id", async (req, res) => {
       const id = req.params.id;
@@ -232,9 +283,7 @@ async function run() {
     // Order product (order) -------------------------------
     app.post("/ordersadd", async (req, res) => {
       const order = req.body;
-      // console.log(booking);
-      // const query = {};
-      // console.log(order);
+
       const orderData = await orderCollection.insertOne(order);
       res.send(orderData);
     });
