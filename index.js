@@ -53,39 +53,39 @@ async function run() {
       .db("Computer-Zone")
       .collection("advertisement");
 
-    const verifyAdmin = async (req, res, next) => {
-      const decodedEmail = req.decoded.email;
+    // const verifyAdmin = async (req, res, next) => {
+    //   const decodedEmail = req.decoded.email;
 
-      const query = { email: decodedEmail };
-      const user = await userCollection.findOne(query);
+    //   const query = { email: decodedEmail };
+    //   const user = await userCollection.findOne(query);
 
-      if (user?.userType !== "Admin") {
-        return res.status(403).send({ message: "forbidden access" });
-      }
-      next();
-    };
-    const verifyBuyer = async (req, res, next) => {
-      const decodedEmail = req.decoded.email;
-      console.log("buyer email", decodedEmail);
-      const query = { email: decodedEmail };
-      const user = await userCollection.findOne(query);
+    //   if (user?.userType !== "Admin") {
+    //     return res.status(403).send({ message: "forbidden access" });
+    //   }
+    //   next();
+    // };
+    // const verifyBuyer = async (req, res, next) => {
+    //   const decodedEmail = req.decoded.email;
+    //   console.log("buyer email", decodedEmail);
+    //   const query = { email: decodedEmail };
+    //   const user = await userCollection.findOne(query);
 
-      if (user?.userType !== "Buyer") {
-        return res.status(403).send({ message: "forbidden access" });
-      }
-      next();
-    };
-    const verifySeller = async (req, res, next) => {
-      const decodedEmail = req.decoded.email;
-      console.log("buyer email", decodedEmail);
-      const query = { email: decodedEmail };
-      const user = await userCollection.findOne(query);
+    //   if (user?.userType !== "Buyer") {
+    //     return res.status(403).send({ message: "forbidden access" });
+    //   }
+    //   next();
+    // };
+    // const verifySeller = async (req, res, next) => {
+    //   const decodedEmail = req.decoded.email;
+    //   console.log("buyer email", decodedEmail);
+    //   const query = { email: decodedEmail };
+    //   const user = await userCollection.findOne(query);
 
-      if (user?.userType !== "Buyer") {
-        return res.status(403).send({ message: "forbidden access" });
-      }
-      next();
-    };
+    //   if (user?.userType !== "Buyer") {
+    //     return res.status(403).send({ message: "forbidden access" });
+    //   }
+    //   next();
+    // };
 
     // JWT Token
     app.get("/jwt", async (req, res) => {
@@ -94,7 +94,7 @@ async function run() {
       const user = await userCollection.findOne(query);
       if (user) {
         const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, {
-          expiresIn: "1h",
+          expiresIn: "1d",
         });
         return res.send({ accessToken: token });
       }
@@ -195,7 +195,7 @@ async function run() {
       res.send(result);
     });
     // client site delete
-    app.delete("/users/:id", verifyJWT, verifyAdmin, async (req, res) => {
+    app.delete("/users/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
       const result = await userCollection.deleteOne(query);
@@ -281,10 +281,10 @@ async function run() {
       res.send(result);
     });
     // Order product (order) -------------------------------
-    app.post("/ordersadd", async (req, res) => {
-      const order = req.body;
-
-      const orderData = await orderCollection.insertOne(order);
+    app.post("/orders", async (req, res) => {
+      const orders = req.body;
+      console.log("order post", orders);
+      const orderData = await orderCollection.insertOne(orders);
       res.send(orderData);
     });
 
