@@ -13,8 +13,6 @@ app.use(cors());
 app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.5xecsyp.mongodb.net/?retryWrites=true&w=majority`;
-// const uri =
-//   "mongodb+srv://computerzone:swP5MLbZ5ZGnFwOR@cluster0.5xecsyp.mongodb.net/?retryWrites=true&w=majority";
 
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
@@ -355,9 +353,9 @@ async function run() {
     });
     // Order product (order) -------------------------------
     app.post("/orders", async (req, res) => {
-      const orders = req.body;
-      console.log("order post", orders);
-      const result = await orderCollection.insertOne(orders);
+      const order = req.body;
+      console.log("order post", order);
+      const result = await orderCollection.insertOne(order);
       res.send(result);
     });
 
