@@ -48,7 +48,10 @@ async function run() {
       .db("Computer-Zone")
       .collection("userCollection");
 
-    const orderCollection = client.db("Computer-Zone").collection("orders");
+    const orderCollection = client.db("Computer-Zone").collection("bookings");
+    const wishListCollection = client
+      .db("Computer-Zone")
+      .collection("wishlist");
     const advertisementCollection = client
       .db("Computer-Zone")
       .collection("advertisement");
@@ -314,7 +317,7 @@ async function run() {
     });
 
     // all orders list
-    app.get("/orders", async (req, res) => {
+    app.get("/bookings", async (req, res) => {
       const query = {};
       const order = await orderCollection.find(query).toArray();
       res.send(order);
@@ -325,8 +328,8 @@ async function run() {
     // order with id ---------------------------------
     // order with id ---------------------------------
     // order with id ---------------------------------
-    app.get("/orders/:id", async (req, res) => {
-      const id = req.params.id;
+    app.get("/bookings/:id", async (req, res) => {
+      const id = req.body.id;
       // console.log("id", id);
       const query = { _id: id };
       console.log("query", query);
@@ -345,24 +348,59 @@ async function run() {
     // --------------------------------------------------
 
     // order delete user
-    app.delete("/orders/:id", async (req, res) => {
+    app.delete("/bookings/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
       const result = await orderCollection.deleteOne(query);
       res.send(result);
     });
     // Order product (order) -------------------------------
-    app.post("/orders", async (req, res) => {
+    app.post("/bookings", async (req, res) => {
       const order = req.body;
       console.log("order post", order);
       const result = await orderCollection.insertOne(order);
       res.send(result);
     });
+    /* ---------------------------------------------------------------- */
+    /* --------------------My Wish List ------------------------------- */
+    /* ---------------------------------------------------------------- */
+    // wishlist get (my wishlist in buyer )
+    app.get("/wishlist", async (req, res) => {
+      const query = {};
+      const wishlist = await wishListCollection.find(query).toArray();
+      res.send(wishlist);
+    });
+    // wishlist post (productDetails)
+    app.post("/wishlist", async (req, res) => {
+      const wishlist = req.body;
+
+      const result = await wishListCollection.insertOne(wishlist);
+      res.send(result);
+    });
+    app.put("/wishlist/buyer/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: {
+          product: "order",
+        },
+      };
+      const result = await wishListCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+      res.send(result);
+    });
+    /* ---------------------------------------------------------------- */
+    /* --------------------My Wish List ------------------------------- */
+    /* ---------------------------------------------------------------- */
 
     // Add product (product) -------------------------------
     app.post("/productadd", async (req, res) => {
       const productAdd = req.body;
-      // console.log(booking);
+
       const product = await productCategory.insertOne(productAdd);
       res.send(product);
     });
