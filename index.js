@@ -315,7 +315,7 @@ async function run() {
       const result = await orderCollections.deleteOne(query);
       res.send(result);
     });
-    // Order product (order)
+    // Order product (order) -------------------------------
     app.post("/bookings", async (req, res) => {
       const order = req.body;
       console.log("order post", order);
@@ -355,10 +355,10 @@ async function run() {
       res.send(result);
     });
     /* ---------------------------------------------------------------- */
-    /* --------------------My Product Add ----------------------------- */
+    /* --------------------My Wish List ------------------------------- */
     /* ---------------------------------------------------------------- */
 
-    // Add product (product)
+    // Add product (product) -------------------------------
     app.post("/productadd", async (req, res) => {
       const productAdd = req.body;
 
