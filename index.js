@@ -13,8 +13,6 @@ app.use(cors());
 app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.5xecsyp.mongodb.net/?retryWrites=true&w=majority`;
-// const uri =
-//   "mongodb+srv://computerzone:swP5MLbZ5ZGnFwOR@cluster0.5xecsyp.mongodb.net/?retryWrites=true&w=majority";
 
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
@@ -50,23 +48,26 @@ async function run() {
       .db("Computer-Zone")
       .collection("userCollection");
 
-    const orderCollection = client.db("Computer-Zone").collection("orders");
+    const orderCollections = client.db("Computer-Zone").collection("bookings");
+    const wishListCollection = client
+      .db("Computer-Zone")
+      .collection("wishlist");
     const advertisementCollection = client
       .db("Computer-Zone")
       .collection("advertisement");
     const paymentsCollection = client.db("Computer-Zone").collection("payment");
 
-    // const verifyAdmin = async (req, res, next) => {
-    //   const decodedEmail = req.decoded.email;
+    const verifyAdmin = async (req, res, next) => {
+      const decodedEmail = req.decoded.email;
 
-    //   const query = { email: decodedEmail };
-    //   const user = await userCollection.findOne(query);
+      const query = { email: decodedEmail };
+      const user = await userCollection.findOne(query);
 
-    //   if (user?.userType !== "Admin") {
-    //     return res.status(403).send({ message: "forbidden access" });
-    //   }
-    //   next();
-    // };
+      if (user?.userType !== "Admin") {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
     // const verifyBuyer = async (req, res, next) => {
     //   const decodedEmail = req.decoded.email;
     //   console.log("buyer email", decodedEmail);
@@ -123,7 +124,7 @@ async function run() {
           transactionId: payment.transactionId,
         },
       };
-      const updateBookingProduct = await orderCollection.updateOne(
+      const updateBookingProduct = await orderCollections.updateOne(
         filter,
         updatedDoc
       );
@@ -137,24 +138,6 @@ async function run() {
 
       res.send(result);
     });
-
-    // app.post("/payments", async (req, res) => {
-    //   const payment = req.body;
-    //   const result = await paymentsCollection.insertOne(payment);
-    //   const id = payment.bookingId;
-    //   const filter = { _id: ObjectId(id) };
-    //   const updatedDoc = {
-    //     $set: {
-    //       paid: true,
-    //       transactionId: payment.transactionId,
-    //     },
-    //   };
-    //   const updatedResult = await bookingsCollection.updateOne(
-    //     filter,
-    //     updatedDoc
-    //   );
-    //   res.send(result);
-    // });
 
     // -------------------------------------------
     // -------------------------------------------
@@ -178,6 +161,14 @@ async function run() {
     app.get("/category", async (req, res) => {
       const query = {};
       const cursor = categoryOption.find(query);
+      const services = await cursor.limit(3).toArray();
+      res.send(services);
+    });
+
+    // only 3 service in show display
+    app.get("/productsSort", async (req, res) => {
+      const query = {};
+      const cursor = productCategory.find(query);
       const services = await cursor.limit(3).toArray();
       res.send(services);
     });
@@ -268,7 +259,7 @@ async function run() {
       res.send(result);
     });
     // client site delete
-    app.delete("/users/:id", async (req, res) => {
+    app.delete("/users/:id", verifyJWT, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
       const result = await userCollection.deleteOne(query);
@@ -283,7 +274,7 @@ async function run() {
     });
 
     // admin approved seller varified
-    app.put("/users/admin/:id", async (req, res) => {
+    app.put("/users/admin/:id", verifyJWT, verifyAdmin, async (req, res) => {
       const id = req.params.id;
 
       const filter = { _id: ObjectId(id) };
@@ -314,11 +305,18 @@ async function run() {
       const user = await userCollection.findOne(query);
       res.send({ isSeller: user?.userType === "Seller" });
     });
+    // seller User
+    app.get("/users/admin/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await userCollection.findOne(query);
+      res.send({ isAdmin: user?.userType === "Admin" });
+    });
 
     // all orders list
-    app.get("/orders", async (req, res) => {
+    app.get("/bookings", async (req, res) => {
       const query = {};
-      const order = await orderCollection.find(query).toArray();
+      const order = await orderCollections.find(query).toArray();
       res.send(order);
     });
 
@@ -327,12 +325,12 @@ async function run() {
     // order with id ---------------------------------
     // order with id ---------------------------------
     // order with id ---------------------------------
-    app.get("/orders/:id", async (req, res) => {
-      const id = req.params.id;
+    app.get("/bookings/:id", async (req, res) => {
+      const id = req.body.id;
       // console.log("id", id);
       const query = { _id: id };
       console.log("query", query);
-      const results = await orderCollection.findOne(query);
+      const results = await orderCollections.findOne(query);
       console.log("order", results);
       res.send(results);
     });
@@ -347,24 +345,59 @@ async function run() {
     // --------------------------------------------------
 
     // order delete user
-    app.delete("/orders/:id", async (req, res) => {
+    app.delete("/bookings/:id", verifyJWT, async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
-      const result = await orderCollection.deleteOne(query);
+      const result = await orderCollections.deleteOne(query);
       res.send(result);
     });
     // Order product (order) -------------------------------
-    app.post("/orders", async (req, res) => {
-      const orders = req.body;
-      console.log("order post", orders);
-      const result = await orderCollection.insertOne(orders);
+    app.post("/bookings", async (req, res) => {
+      const order = req.body;
+      console.log("order post", order);
+      const result = await orderCollections.insertOne(order);
       res.send(result);
     });
+    /* ---------------------------------------------------------------- */
+    /* --------------------My Wish List ------------------------------- */
+    /* ---------------------------------------------------------------- */
+    // wishlist get (my wishlist in buyer )
+    app.get("/wishlist", async (req, res) => {
+      const query = {};
+      const wishlist = await wishListCollection.find(query).toArray();
+      res.send(wishlist);
+    });
+    // wishlist post (productDetails)
+    app.post("/wishlist", async (req, res) => {
+      const wishlist = req.body;
+
+      const result = await wishListCollection.insertOne(wishlist);
+      res.send(result);
+    });
+    app.put("/wishlist/buyer/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: {
+          product: "order",
+        },
+      };
+      const result = await wishListCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+      res.send(result);
+    });
+    /* ---------------------------------------------------------------- */
+    /* --------------------My Wish List ------------------------------- */
+    /* ---------------------------------------------------------------- */
 
     // Add product (product) -------------------------------
     app.post("/productadd", async (req, res) => {
       const productAdd = req.body;
-      // console.log(booking);
+
       const product = await productCategory.insertOne(productAdd);
       res.send(product);
     });
