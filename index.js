@@ -299,14 +299,18 @@ async function run() {
     });
 
     app.get("/bookings/:id", async (req, res) => {
-      const id = req.body.id;
-      // console.log("id", id);
-      const query = { _id: id };
-      console.log("query", query);
-      const results = await orderCollections.findOne(query);
-      console.log("order", results);
-      res.send(results);
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const services = await orderCollections.findOne(query).toArray();
+      res.send(services);
     });
+
+    // app.get("/bookings/:id", async (req, res) => {
+    //   const id = req.body.id;
+    //   const query = { _id: id };
+    //   const results = await orderCollections.findOne(query);
+    //   res.send(results);
+    // });
 
     // order delete user
     app.delete("/bookings/:id", verifyJWT, async (req, res) => {
