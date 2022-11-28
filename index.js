@@ -1,12 +1,15 @@
 const express = require("express");
 const cors = require("cors");
-const app = express();
+
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
 const port = process.env.PORT || 5000;
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+
+const app = express();
 
 // middleware
 app.use(cors());
@@ -55,7 +58,9 @@ async function run() {
     const advertisementCollection = client
       .db("Computer-Zone")
       .collection("advertisement");
-    const paymentsCollection = client.db("Computer-Zone").collection("payment");
+    const paymentsCollection = client
+      .db("Computer-Zone")
+      .collection("payments");
 
     const verifyAdmin = async (req, res, next) => {
       const decodedEmail = req.decoded.email;
@@ -68,30 +73,7 @@ async function run() {
       }
       next();
     };
-    // const verifyBuyer = async (req, res, next) => {
-    //   const decodedEmail = req.decoded.email;
-    //   console.log("buyer email", decodedEmail);
-    //   const query = { email: decodedEmail };
-    //   const user = await userCollection.findOne(query);
 
-    //   if (user?.userType !== "Buyer") {
-    //     return res.status(403).send({ message: "forbidden access" });
-    //   }
-    //   next();
-    // };
-    // const verifySeller = async (req, res, next) => {
-    //   const decodedEmail = req.decoded.email;
-    //   console.log("buyer email", decodedEmail);
-    //   const query = { email: decodedEmail };
-    //   const user = await userCollection.findOne(query);
-
-    //   if (user?.userType !== "Buyer") {
-    //     return res.status(403).send({ message: "forbidden access" });
-    //   }
-    //   next();
-    // };
-
-    // JWT Token
     // -------------------------------------------
     // -------------------------------------------
     // -------------------------------------------
@@ -99,8 +81,8 @@ async function run() {
     // -------------------------------------------
 
     app.post("/create-payment-intent", async (req, res) => {
-      const payment = req.body;
-      const price = parseInt(payment.price);
+      const booking = req.body;
+      const price = booking.price;
       const amount = price * 100;
 
       const paymentIntent = await stripe.paymentIntents.create({
@@ -108,15 +90,15 @@ async function run() {
         amount: amount,
         payment_method_types: ["card"],
       });
-      console.log(paymentIntent);
       res.send({
         clientSecret: paymentIntent.client_secret,
       });
     });
-    app.post("/payment", async (req, res) => {
+
+    app.post("/payments", async (req, res) => {
       const payment = req.body;
       const result = await paymentsCollection.insertOne(payment);
-      const id = payment.productId;
+      const id = payment.bookingId;
       const filter = { _id: ObjectId(id) };
       const updatedDoc = {
         $set: {
@@ -124,18 +106,10 @@ async function run() {
           transactionId: payment.transactionId,
         },
       };
-      const updateBookingProduct = await orderCollections.updateOne(
+      const updatedResult = await bookingsCollection.updateOne(
         filter,
         updatedDoc
       );
-      const categoryId = payment.categoryItemId;
-      const categoryFilter = { _id: ObjectId(categoryId) };
-
-      const updateCategoryItems = await productCategory.updateOne(
-        categoryFilter,
-        updatedDoc
-      );
-
       res.send(result);
     });
 
@@ -313,6 +287,10 @@ async function run() {
       res.send({ isAdmin: user?.userType === "Admin" });
     });
 
+    /* ---------------------------------------------------------------- */
+    /* --------------------My booking --------------------------------- */
+    /* ---------------------------------------------------------------- */
+
     // all orders list
     app.get("/bookings", async (req, res) => {
       const query = {};
@@ -320,11 +298,6 @@ async function run() {
       res.send(order);
     });
 
-    // order with id ---------------------------------
-    // order with id ---------------------------------
-    // order with id ---------------------------------
-    // order with id ---------------------------------
-    // order with id ---------------------------------
     app.get("/bookings/:id", async (req, res) => {
       const id = req.body.id;
       // console.log("id", id);
@@ -334,15 +307,6 @@ async function run() {
       console.log("order", results);
       res.send(results);
     });
-    // --------------------------------------------------
-    // --------------------------------------------------
-    // --------------------------------------------------
-    // --------------------------------------------------
-    // --------------------------------------------------
-    // --------------------------------------------------
-    // --------------------------------------------------
-    // --------------------------------------------------
-    // --------------------------------------------------
 
     // order delete user
     app.delete("/bookings/:id", verifyJWT, async (req, res) => {
@@ -351,7 +315,7 @@ async function run() {
       const result = await orderCollections.deleteOne(query);
       res.send(result);
     });
-    // Order product (order) -------------------------------
+    // Order product (order)
     app.post("/bookings", async (req, res) => {
       const order = req.body;
       console.log("order post", order);
@@ -391,10 +355,10 @@ async function run() {
       res.send(result);
     });
     /* ---------------------------------------------------------------- */
-    /* --------------------My Wish List ------------------------------- */
+    /* --------------------My Product Add ----------------------------- */
     /* ---------------------------------------------------------------- */
 
-    // Add product (product) -------------------------------
+    // Add product (product)
     app.post("/productadd", async (req, res) => {
       const productAdd = req.body;
 
